@@ -9,30 +9,34 @@ typedef struct matrix *Matrix;
 
 Matrix createMatrix(int lines, int columns);
 
+void freeMatrix(Matrix M);
+
 double getMatrixElement(Matrix M, int line, int column);
 
 void initMatrix(Matrix M, double *values);
 
 void initMatrixRandom(Matrix M);
 
-Matrix matrixMultiplication(Matrix m1, Matrix m2);
+void matrixMultiplication(Matrix m1, Matrix m2, Matrix result);
 
-Matrix matrixDotProduct(Matrix m1, Matrix m2);
+void matrixDotProduct(Matrix m1, Matrix m2, Matrix result);
 
-Matrix matrixSum(Matrix m1, Matrix m2);
+void matrixSum(Matrix m1, Matrix m2, Matrix result);
 
-Matrix matrixSumBias(Matrix m1, Matrix m2);
+void matrixSumBias(Matrix m1, Matrix m2, Matrix result);
 
-Matrix matrixSubtraction(Matrix m1, Matrix m2);
+void matrixSubtraction(Matrix m1, Matrix m2, Matrix result);
 
 Matrix matrixClone(Matrix m);
 
-Matrix matrixTranspose(Matrix m);
+void matrixTranspose(Matrix m, Matrix result);
 
-Matrix matrixMultiplyByEscalar(Matrix m, double x);
+void matrixMultiplyByEscalar(Matrix m, double x, Matrix result);
 
-Matrix activate(Matrix M, int prime, char activation[4]);
+void activate(Matrix M, int prime, char activation[4], Matrix result);
 
 void printMatrix(Matrix M);
 
 double MatrixSumValues(Matrix M);
+
+int matrixCompareMax(Matrix m1, Matrix m2);

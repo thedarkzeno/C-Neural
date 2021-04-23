@@ -18,10 +18,9 @@ int main()
     Matrix output = createMatrix(4, 1);
 
     // initMatrixRandom(input);
-    double values1[4][2] = {{0, 0}, {1, 1},{0, 1}, {1, 0}};
+    double values1[8] = {0, 0, 1, 1, 0, 1, 1, 0};
     
-
-    double out1[4][1] = {{0}, {0}, {1}, {1}};
+    double out1[4] = {0, 0, 1, 1};
 
 
     initMatrix(input, values1);

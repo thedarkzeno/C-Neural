@@ -2,43 +2,82 @@
 #include <stdio.h>
 #include "model.h"
 
-Matrix cost(Matrix output, Matrix label)
+void cost(Matrix output, Matrix label, Matrix result)
 {
-    return matrixSubtraction(label, output);
+    // Matrix result = createMatrix(label->lines, label->columns);
+    matrixSubtraction(label, output, result);
+    // return result;
 }
 
 double loss(Matrix output, Matrix label)
 {
-    Matrix sub = matrixSubtraction(label, output);
-    return MatrixSumValues(matrixMultiplyByEscalar(matrixDotProduct(sub, sub), 0.5)) / (label->columns * label->lines);
+    Matrix sub = createMatrix(label->lines, label->columns);
+    matrixSubtraction(label, output, sub);
+    Matrix d = createMatrix(sub->lines, sub->columns);
+    matrixDotProduct(sub, sub, d);
+    matrixMultiplyByEscalar(d, 0.5, d);
+    
+    double sum = MatrixSumValues(d);
+
+    freeMatrix(sub);
+    freeMatrix(d);
+    return sum / (label->columns * label->lines);
 }
 
 Matrix layerForward(Matrix input, Layer layer)
 {
     Matrix result = createMatrix(input->lines, layer->weights->columns);
-    result = matrixSumBias(matrixMultiplication(input, layer->weights), layer->bias);
+    Matrix m = createMatrix(input->lines, layer->weights->columns);
+    matrixMultiplication(input, layer->weights, m);
+    matrixSumBias(m, layer->bias, result);
     layer->logit = result;
     layer->input = input;
-    result = activate(result, 0, layer->activation);
+    activate(result, 0, layer->activation, result);
+    freeMatrix(m);
     return result;
 }
 
-Matrix layerGradient(Layer layer, Matrix diff)
+void layerGradient(Layer layer, Matrix diff, Matrix result)
 {
-    Matrix a = activate(layer->logit, 1, layer->activation);
-    Matrix p = matrixDotProduct(diff, a);
-    return matrixMultiplication(p, matrixTranspose(layer->weights));
+    Matrix a = createMatrix(layer->logit->lines, layer->logit->columns);
+    activate(layer->logit, 1, layer->activation, a);
+    Matrix p = createMatrix(diff->lines, diff->columns);
+    matrixDotProduct(diff, a, p);
+    // Matrix m = createMatrix(p->lines, layer->weights->lines);
+    Matrix mt = createMatrix(layer->weights->columns, layer->weights->lines);
+    matrixTranspose(layer->weights, mt);
+    matrixMultiplication(p, mt, result);
+    freeMatrix(a);
+    freeMatrix(mt);
+    freeMatrix(p);
+    // return m;
 }
 
 void layerUpdate(Layer layer, Matrix diff, double lr)
 {
 
-    Matrix p = matrixDotProduct(diff, activate(layer->logit, 1, layer->activation));
+    Matrix p = createMatrix(diff->lines, diff->columns);
+    Matrix pt = createMatrix(p->columns, p->lines);
+    Matrix l_a = createMatrix(layer->logit->lines, layer->logit->columns);
+    activate(layer->logit, 1, layer->activation, l_a);
+    matrixDotProduct(diff, l_a, p);
+    matrixTranspose(p, pt);
 
-    Matrix g = matrixMultiplication(matrixTranspose(p), layer->input);
+    Matrix g = createMatrix(p->columns, layer->input->columns);
+    Matrix gt = createMatrix(g->columns, g->lines);
+    matrixMultiplication(pt, layer->input, g);
+    matrixTranspose(g, gt);
+    matrixMultiplyByEscalar(gt, lr, gt);
+    matrixMultiplyByEscalar(p, lr, p);
 
-    layer->weights = matrixSum(layer->weights, matrixMultiplyByEscalar(matrixTranspose(g), lr));
-    layer->bias = matrixSum(layer->bias, matrixMultiplyByEscalar(p, lr));
+    matrixSum(layer->weights, gt, layer->weights);
+    matrixSum(layer->bias, p, layer->bias);
+
+    freeMatrix(p);
+    freeMatrix(pt);
+    freeMatrix(g);
+    freeMatrix(gt);
+    freeMatrix(l_a);
 }
 
 void modelFit(Model m, Matrix input, Matrix labels, double lr, int epochs)
@@ -50,7 +89,8 @@ void modelFit(Model m, Matrix input, Matrix labels, double lr, int epochs)
     for (e = 0; e < epochs; e++)
     {
         Matrix output = modelForward(m, input);
-        struct matrix *diff = cost(output, labels);
+        struct matrix *diff = createMatrix(output->lines, output->columns);
+        cost(output, labels, diff);
         for (j = 0; j < m->nLayers; j++)
         {
             layer = m->first;
@@ -61,7 +101,11 @@ void modelFit(Model m, Matrix input, Matrix labels, double lr, int epochs)
                 {
 
                     layerUpdate(layer, diff, lr);
-                    diff = layerGradient(layer, diff);
+                    Matrix res = createMatrix(diff->lines, layer->weights->lines);
+                    layerGradient(layer, diff, res);
+                    freeMatrix(diff);
+                    diff = matrixClone(res);
+                    freeMatrix(res);
                 }
                 layer = layer->next;
             }
@@ -84,6 +128,8 @@ void modelFit(Model m, Matrix input, Matrix labels, double lr, int epochs)
             output = modelForward(m, input);
             printf("Loss: %f  |  Epoch: %d\n", loss(output, labels), e);
         }
+        freeMatrix(output);
+        freeMatrix(diff);
     }
     printf("\n");
 }
