@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "model.h"
 
 
@@ -22,11 +23,8 @@ int main()
     
     double out1[4] = {0, 0, 1, 1};
 
-
     initMatrix(input, values1);
     initMatrix(output, out1);
-
-    
     
     modelFit(model, input, output, .01, 150000);
 
